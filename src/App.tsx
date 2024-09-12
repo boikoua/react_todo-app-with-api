@@ -18,6 +18,8 @@ export const App: React.FC = () => {
   const [tempTodo, setTempTodo] = useState<Todo | null>(null);
   const [isAdding, setIsAdding] = useState<boolean>(false);
 
+  const [isSubmitting, setIsSubmitting] = useState<boolean>(false);
+
   const inputRef = useRef<HTMLInputElement>(null);
 
   const hideAllErrorMessage = () => {
@@ -40,7 +42,7 @@ export const App: React.FC = () => {
     if (!isAdding && inputRef.current) {
       inputRef.current.focus();
     }
-  }, [isAdding, todos]);
+  }, [isAdding, todos, isSubmitting]);
 
   const filteredTodos = useMemo(() => {
     return todos.filter(todo => {
@@ -59,7 +61,8 @@ export const App: React.FC = () => {
 
   const deleteTodo = (todoId: number) => {
     setTodosInTheBoot(currentBootTodos => [...currentBootTodos, todoId]);
-    todoService
+
+    return todoService
       .deleteTodo(todoId)
       .then(() => {
         setTodos(currentTodos =>
@@ -86,7 +89,7 @@ export const App: React.FC = () => {
 
     setIsAdding(true);
 
-    todoService
+    return todoService
       .postTodo(newTodo)
       .then(addingTodo => {
         setTodos(currentTodos => [...currentTodos, addingTodo]);
@@ -108,6 +111,39 @@ export const App: React.FC = () => {
       });
   };
 
+  const updateTodo = (todoId: number, title: string, completed?: boolean) => {
+    const todoForUpdate = todos.find(todo => todo.id === todoId);
+
+    if (!todoForUpdate) {
+      return;
+    }
+
+    const todoUpdate = {
+      ...todoForUpdate,
+      title: title.trim(),
+      completed: completed ?? todoForUpdate.completed,
+    };
+
+    setTodosInTheBoot(currentBootTodos => [...currentBootTodos, todoId]);
+
+    return todoService
+      .updateTodo(todoId, todoUpdate)
+      .then(() => {
+        setTodos(currentTodos =>
+          currentTodos.map(todo => (todo.id === todoId ? todoUpdate : todo)),
+        );
+      })
+      .catch(() => {
+        setErrorMessage('Unable to update a todo');
+        hideAllErrorMessage();
+      })
+      .finally(() => {
+        setTodosInTheBoot(currentBootTodos =>
+          currentBootTodos.filter(id => id !== todoId),
+        );
+      });
+  };
+
   const handleFormSubmit = (event: React.FormEvent) => {
     event.preventDefault();
 
@@ -120,6 +156,8 @@ export const App: React.FC = () => {
       return;
     }
 
+    setIsSubmitting(true);
+
     setTempTodo({
       id: 0,
       title,
@@ -131,7 +169,7 @@ export const App: React.FC = () => {
       title,
       completed: false,
       userId: todoService.USER_ID,
-    });
+    }).finally(() => setIsSubmitting(false));
   };
 
   return (
@@ -145,12 +183,14 @@ export const App: React.FC = () => {
           formSubmit={handleFormSubmit}
           isAdding={isAdding}
           inputRef={inputRef}
+          updateTodo={updateTodo}
         />
         <TodoList
           todos={filteredTodos}
           todosBoot={todosInTheBoot}
           deleteTodo={deleteTodo}
           tempTodo={tempTodo}
+          updateTodo={updateTodo}
         />
 
         {!!todos.length && (

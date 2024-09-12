@@ -9,6 +9,11 @@ type Props = {
   formSubmit: (event: React.FormEvent) => void;
   isAdding: boolean;
   inputRef: React.RefObject<HTMLInputElement>;
+  updateTodo: (
+    todoId: number,
+    title: string,
+    completed?: boolean,
+  ) => Promise<void> | undefined;
 };
 
 const Header: React.FC<Props> = ({
@@ -18,6 +23,7 @@ const Header: React.FC<Props> = ({
   formSubmit,
   isAdding,
   inputRef,
+  updateTodo,
 }) => {
   const allTodosCompleted = todos.every(todo => todo.completed);
 
@@ -25,13 +31,23 @@ const Header: React.FC<Props> = ({
     setTodoTitle(event.target.value);
   };
 
+  const handleCompleteAll = async () => {
+    const allComplete = todos.every(todo => todo.completed);
+    const todosToUpdate = todos.filter(todo => todo.completed !== !allComplete);
+
+    await Promise.all(
+      todosToUpdate.map(todo => updateTodo(todo.id, todo.title, !allComplete)),
+    );
+  };
+
   return (
     <header className="todoapp__header">
-      {todos.length > 0 && (
+      {!!todos.length && (
         <button
           type="button"
           className={cn('todoapp__toggle-all', { active: allTodosCompleted })}
           data-cy="ToggleAllButton"
+          onClick={handleCompleteAll}
         />
       )}
 

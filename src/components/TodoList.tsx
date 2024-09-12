@@ -8,6 +8,11 @@ type Props = {
   todosBoot: number[];
   deleteTodo: (todoId: number) => void;
   tempTodo: Todo | null;
+  updateTodo: (
+    todoId: number,
+    title: string,
+    completed?: boolean,
+  ) => Promise<void> | undefined;
 };
 
 const TodoList: React.FC<Props> = ({
@@ -15,6 +20,7 @@ const TodoList: React.FC<Props> = ({
   todosBoot,
   deleteTodo,
   tempTodo,
+  updateTodo,
 }) => {
   const showTodos = todos.map(todo => (
     <TodoItem
@@ -22,6 +28,7 @@ const TodoList: React.FC<Props> = ({
       key={todo.id}
       todosBoot={todosBoot}
       deleteTodo={deleteTodo}
+      updateTodo={updateTodo}
     />
   ));
 
